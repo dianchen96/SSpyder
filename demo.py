@@ -25,20 +25,27 @@ class EngineSpyder(Spyder):
 		self.tag = None
 		self._nextUrl = None
 
-	def search(self, keyword, item = 10):
+	def search(self, keyword, item = 10, baseUrl = self.baseUrl, ):
 		count = 0
-		url = self.baseUrl + keyword
-		print(url)
-		while count < item:
-			request = urllib2.Request(url, headers = self.headers)
-			html = urllib2.urlopen(request).read()
-			soup = BeautifulSoup(html, 'html.parser')
-			for tag in soup.find_all('div', class_ = self.tag):
-				count += 1
-				yield tag
-				if count >= item:
-					return;
-			url = self.baseUrl + keyword + self.nextUrl(count)
+		url = baseUrl + keyword
+		try:
+			while count < item:
+				request = urllib2.Request(url, headers = self.headers)
+				html = urllib2.urlopen(request).read()
+				soup = BeautifulSoup(html, 'html.parser')
+				for tag in soup.find_all('div', class_ = self.tag):
+					count += 1
+					# print(tag)
+					yield tag
+					if count >= item:
+						return;
+				url = baseUrl + keyword + self.nextUrl(count)
+				print(url)
+		except urllib2.URLError, e:
+			if hasattr(e,"code"):
+			    print e.code
+			if hasattr(e,"reason"):
+			    print e.reason
 
 	def nextUrl(self, count):
 		return self._nextUrl + str(count)
@@ -65,17 +72,33 @@ class BaiduSpyder(EngineSpyder):
 		for tag in self.search(urllib.quote(keyword.decode(sys.stdin.encoding).encode('gbk')), item):
 			yield {'title': tag.h3.a.text, 'url': tag.h3.a['href']}
 
+	def search_id(self, id):
+		url = ''
+		request = urllib2.Request(url, headers = self.headers)
+		html = urllib2.urlopen(request).read()
+		soup = BeautifulSoup(html, 'html.parser')
 
 class TiebaSpyder(EngineSpyder):
 	def __init__(self):
-		self.base = 'https://tieba.baidu.com'
+		self.base = 'http://tieba.baidu.com'
 		self.baseUrl = self.base + '/f/search/res?qw='
 		self.tag = 's_post'
 		self._nextUrl = '&pn='
 
 	def search_results(self, keyword, item = 10):
 		for tag in self.search(keyword, item):
-			yield {'title': tag.span.a.text, 'url': self.base + tag.span.a['href']}
+			yield {'title': tag.a.text, 'url': self.base + tag.a['href']}
+
+	def search_id(self, keyword):
+		url = 'http://tieba.baidu.com/f/search/ures?sm=1&un=' + urllib.quote(keyword.decode(sys.stdin.encoding).encode('gbk'))
+		request = urllib2.Request(url, headers = self.headers)
+		html = urllib2.urlopen(request).read()
+		soup = BeautifulSoup(html, 'html.parser')
+		for tag in soup.find_all('div', class_ = self.tag):
+			yield {'title': tag.a.text}
+
+	def nextUrl(self, count):
+		return self._nextUrl + str((count / 10) + 1) 
 
 
 ####################################
@@ -95,8 +118,10 @@ def baidu(keyword):
 		print('-'*50)
 
 def tieba(keyword):
-	for tag in TiebaSpyder().search(keyword):
-		print(tag)
+	for tag in TiebaSpyder().search_results(keyword, 20):
+		print(tag['title'])
+		print(tag['url'])
+		print('-'*50)
 
 
 
