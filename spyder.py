@@ -4,12 +4,14 @@ import urllib
 import urllib2
 from bs4 import BeautifulSoup
 
+import cookielib
+
 
 ###################################
 ########   Spyder Classes   #######
 ###################################
 
-class Spyder:
+class Spyder(object):
 
 	user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.125 Safari/537.36'  
 	headers = {'User-Agent': user_agent}
@@ -101,7 +103,32 @@ class TiebaIDSpyder(TiebaSpyder):
 			yield {'title': tag.a.text, 'url': self.base + tag.a['href'], 'content': tag.div.text}
 
 
+class LoginSpyder(Spyder):
+	def __init__(self, username, password):
+		# URL Related 
+		self.url = None
+		self.domain = None
+		self.loginUrl = None
+		# Info Related
+		self.loginParams = None
+		self.username = username
+		self.password = password
+		# Set Cookie Jar
+		self.cookieJar = cookielib.LWPCookieJar()
+		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookieJar))
+		urllib2.install_opener(self.opener)
 
+	def login(self):
+		request = urllib2.Request(self.loginUrl, urllib.urlencode(self.loginParams), headers = self.headers)
+		return urllib2.urlopen(request).geturl()
+
+
+class RenrenSpyder(LoginSpyder):
+	def __init__(self, username, password):
+		super(RenrenSpyder, self).__init__(username, password)
+		self.domain = 'renren.com'
+		self.loginUrl = 'http://www.renren.com/PLogin.do'
+		self.loginParams = {'domain': self.loginUrl, 'email': self.username, 'password': self.password}
 
 
 
@@ -133,6 +160,19 @@ def tieba_id(keyword):
 		print(tag['url'])
 		print(tag['content'])
 		print('-'*50)
+
+
+###################################
+########## Tests  #################
+###################################
+a = RenrenSpyder('18672356725', 'chendian6996')
+print(a.loginParams)
+print(a.login())
+
+
+
+
+
 
 ###################################
 ##########  Utilities   ###########
