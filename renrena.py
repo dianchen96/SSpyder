@@ -62,54 +62,6 @@ class EngineSpyder(Spyder):
 		return self._nextUrl + str(count)
 
 
-class GoogleSpyder(EngineSpyder):
-	def __init__(self):
-		self.baseUrl = 'https://www.google.com/search?q='
-		self.tag = 'g'
-		self._nextUrl = '&start='
-
-	def search_results(self, keyword, item = 10):
-		for tag in self.search(urllib.quote(keyword.decode('gbk').encode('utf-8')), item):
-			yield {'title': tag.a.text, 'url': tag.a['href']}
-
-
-class BaiduSpyder(EngineSpyder):
-	def __init__(self):
-		self.baseUrl = 'https://www.baidu.com/s?wd='
-		self.tag = 'result'
-		self._nextUrl = '&pn='
-
-	def search_results(self, keyword, item = 10):
-		for tag in self.search(urllib.quote(keyword.decode(sys.stdin.encoding).encode('gbk')), item):
-			yield {'title': tag.h3.a.text, 'url': tag.h3.a['href']}
-
-class TiebaSpyder(EngineSpyder):
-	def __init__(self):
-		self.base = 'http://tieba.baidu.com'
-		self.baseUrl = self.base + '/f/search/res?qw='
-		self.tag = 's_post'
-		self._nextUrl = '&pn='
-
-	def search_results(self, keyword, item = 10):
-		for tag in self.search(keyword, item):
-			yield {'title': tag.a.text, 'url': self.base + tag.a['href']}
-
-	def nextUrl(self, count):
-		return self._nextUrl + str((count / 10) + 1) 
-
-class TiebaIDSpyder(TiebaSpyder):
-	def __init__(self, item=10):
-		self.item = item
-		self.base = 'http://tieba.baidu.com'
-		self.baseUrl = self.base + '/f/search/ures?sm=1&rn=' + str(self.item) +'&un='
-		self.tag = 's_post'
-		self._nextUrl = '&pn='
-
-	def search_results(self, keyword):
-		for tag in self.search(urllib.quote(keyword.decode(sys.stdin.encoding).encode('gbk')), self.item):
-			yield {'title': tag.a.text, 'url': self.base + tag.a['href'], 'content': tag.div.text}
-
-
 class LoginSpyder(Spyder):
 	def __init__(self, username, password):
 		# URL Related 
@@ -164,47 +116,6 @@ class RenrenSpyder(LoginSpyder):
 		with open('G:/academics/spyder/'+ownerid+'/'+date+'.html', 'wb') as file_:
 			print('Archiving '+ ownerid +', as of ' + date + '  ...')
 			file_.write(html)
-		# soup = BeautifulSoup(html)
-		# return [{} for tag in soup.find_all('sec')]
-
-
-
-####################################
-#######  Terminal Testing    #######
-####################################
-
-def google(keyword):
-	for tag in GoogleSpyder().search_results(keyword):
-		print(tag['title'])
-		print(tag['url'])
-		print('-'*50)
-
-def baidu(keyword):
-	for tag in BaiduSpyder().search_results(keyword, 20):
-		print(tag['title'])
-		print(tag['url'])
-		print('-'*50)
-
-def tieba(keyword):
-	for tag in TiebaSpyder().search_results(keyword, 20):
-		print(tag['title'])
-		print(tag['url'])
-		print('-'*50)
-
-def tieba_id(keyword):
-	for tag in TiebaIDSpyder(20).search_results(keyword):
-		print(tag['title'])
-		print(tag['url'])
-		print(tag['content'])
-		print('-'*50)
-
-def renren_id(keyword):
-	a = RenrenSpyder('dianchen96@berkeley.edu', 'cczx691')
-	a.login()
-	for tag in a.search_id(keyword):
-		print(tag['name'])
-		print(tag['img'])
-		print('-'*50)
 
 def main():
 	a = RenrenSpyder('dianchen96@berkeley.edu', 'cczx691')
@@ -222,20 +133,3 @@ def main():
 	print('Done ')
 
 main()
-
-###################################
-########## Tests  #################
-###################################
-
-def renren_archive():
-	url = 'http://www.renren.com/361513136/profile?ref=searchresult_0&q=\u9648\u7EFF\u7B71|p=|s=0|u=470629775&act=name&rt=user&in=0&ft=2&hh=1'
-
-
-
-
-
-
-
-###################################
-##########  Utilities   ###########
-###################################
