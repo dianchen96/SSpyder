@@ -138,8 +138,9 @@ class RenrenSpyder(LoginSpyder):
 		for tag in EngineSpyder(baseUrl = 'http://browse.renren.com/s/all?from=opensearch&q=', tag = 'list-mod').search(keyword, item, nextpage = False):
 			yield {'name': tag.p.a.text, 'img':tag.a.img['data-src'], 'url': tag.a['href']}
 
-	def archive_id(url):
-		html = self.open(urllib2.Request(url, headers = self.headers))
+	def archive_id(person):
+		html = urllib2.urlopen(urllib2.Request(person['url'], headers = self.headers))
+		print(html)
 
 ####################################
 #######  Terminal Testing    #######
@@ -171,7 +172,7 @@ def tieba_id(keyword):
 		print('-'*50)
 
 def renren_id(keyword):
-	a = RenrenSpyder('18672356725', 'chendian6996')
+	a = RenrenSpyder('dianchen96@berkeley.edu', 'cczx691')
 	a.login()
 	for tag in a.search_id(keyword):
 		print(tag['name'])
