@@ -23,28 +23,31 @@ class Spyder(object):
 
 class EngineSpyder(Spyder):
 
-	def __init__(self):
-		self.baseUrl = None
-		self.tag = None
-		self._nextUrl = None
+	def __init__(self, baseUrl = None, tag = None, _nextUrl = None):
+		self.baseUrl = baseUrl
+		self.tag = tag
+		self._nextUrl = _nextUrl
 
-	def search(self, keyword, item = 10):
+	def search(self, keyword, item = 10, nextpage = True):
 		count = 0
 		url = self.baseUrl + keyword
 		try:
 			while count < item:
 				request = urllib2.Request(url, headers = self.headers)
-				# print(url)
 				html = urllib2.urlopen(request).read()
-				# print(html)
 				soup = BeautifulSoup(html, 'html.parser')
-				for tag in soup.find_all('div', class_ = self.tag):
+				results = soup.find_all('div', class_ = self.tag)
+				if len(results) == 0:
+					return 
+				for tag in results:
 					count += 1
-					# print(tag)
 					yield tag
 					if count >= item:
 						return;
-				url = self.baseUrl + keyword + self.nextUrl(count)
+				if nextpage:
+					url = self.baseUrl + keyword + self.nextUrl(count)
+				else:
+					return
 		except urllib2.URLError, e:
 			if hasattr(e,"code"):
 			    print e.code
@@ -120,7 +123,7 @@ class LoginSpyder(Spyder):
 
 	def login(self):
 		request = urllib2.Request(self.loginUrl, urllib.urlencode(self.loginParams), headers = self.headers)
-		return urllib2.urlopen(request).geturl()
+		self.url = urllib2.urlopen(request).geturl()
 
 
 class RenrenSpyder(LoginSpyder):
@@ -131,6 +134,12 @@ class RenrenSpyder(LoginSpyder):
 		self.loginParams = {'domain': self.loginUrl, 'email': self.username, 'password': self.password}
 
 
+	def search_id(self, keyword, item = 10):	
+		for tag in EngineSpyder(baseUrl = 'http://browse.renren.com/s/all?from=opensearch&q=', tag = 'list-mod').search(keyword, item, nextpage = False):
+			yield {'name': tag.p.a.text, 'img':tag.a.img['data-src'], 'url': tag.a['href']}
+
+	def archive_id(url):
+		html = self.open(urllib2.Request(url, headers = self.headers))
 
 ####################################
 #######  Terminal Testing    #######
@@ -161,13 +170,22 @@ def tieba_id(keyword):
 		print(tag['content'])
 		print('-'*50)
 
+def renren_id(keyword):
+	a = RenrenSpyder('18672356725', 'chendian6996')
+	a.login()
+	for tag in a.search_id(keyword):
+		print(tag['name'])
+		print(tag['img'])
+		print('-'*50)
+
 
 ###################################
 ########## Tests  #################
 ###################################
-a = RenrenSpyder('18672356725', 'chendian6996')
-print(a.loginParams)
-print(a.login())
+
+def renren_archive():
+	url = 'http://www.renren.com/361513136/profile?ref=searchresult_0&q=\u9648\u7EFF\u7B71|p=|s=0|u=470629775&act=name&rt=user&in=0&ft=2&hh=1'
+
 
 
 
