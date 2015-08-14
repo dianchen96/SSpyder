@@ -188,13 +188,6 @@ class WeiboSpyder(LoginSpyder):
 		except:
 			print('Login Weibo error!')
 
-
-# a = WeiboSpyder('dianchen96@gmail.com', 'chendian6996')
-# a.login()
-# html = urllib2.urlopen(a.url).read()
-# with open('G:/academics/spyder/1.html', 'wb') as file_:
-# 	file_.write(html)
-
 ####################################
 #######  Terminal Testing    #######
 ####################################
