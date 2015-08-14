@@ -2,11 +2,11 @@
 import sys
 import urllib
 import urllib2
+import cookielib
 from bs4 import BeautifulSoup
 
-import cookielib
-import re
-import os
+import WeiboEncode
+import WeiboSearch
 
 ## Archiving ##
 # import codecs
@@ -127,7 +127,7 @@ class LoginSpyder(Spyder):
 
 	def login(self):
 		request = urllib2.Request(self.loginUrl, urllib.urlencode(self.loginParams), headers = self.headers)
-		self.url = urllib2.urlopen(request).geturl()
+		self.url =  urllib2.urlopen(request).geturl()
 
 
 class RenrenSpyder(LoginSpyder):
@@ -142,7 +142,7 @@ class RenrenSpyder(LoginSpyder):
 		for tag in EngineSpyder(baseUrl = 'http://browse.renren.com/s/all?from=opensearch&q=', tag = 'list-mod').search(keyword, item, nextpage = False):
 			yield {'name': tag.p.a.text, 'img':tag.a.img['data-src'], 'url': tag.a['href']}
 
-	def archive_person(self, person, y_range, m_range):
+	def person_timeline(self, person, y_range, m_range):
 		url = 'http://www.renren.com/timelinefeedretrieve.do?'
 		ownerid = re.compile(r"\d{9}").search(person['url']).group(0)
 		# print(ownerid)
@@ -153,10 +153,11 @@ class RenrenSpyder(LoginSpyder):
 				data['month'] = str(month)
 				try:
 					full_url = url + urllib.urlencode(data)
-					# print(full_url)
 					request = urllib2.Request(full_url, headers = self.headers)
 					html = urllib2.urlopen(request).read()
-					self.archive_page(ownerid, html, str(year)+'-'+str(month))
+					soup = BeautifulSoup(html, 'html.parser')
+					for tag in soup.find_all('section', class_ = 'tl-a-feed'):
+						yield 
 				except urllib2.URLError, e:
 					pass
 
@@ -164,10 +165,35 @@ class RenrenSpyder(LoginSpyder):
 		with open('G:/academics/spyder/'+ownerid+'/'+date+'.html', 'wb') as file_:
 			print('Archiving '+ ownerid +', as of ' + date + '  ...')
 			file_.write(html)
-		# soup = BeautifulSoup(html)
-		# return [{} for tag in soup.find_all('sec')]
+
+# Since Weibo changes encription ways, this maybe subject to change
+class WeiboSpyder(LoginSpyder):
+	def __init__(self, username, password):
+		super(WeiboSpyder, self).__init__(username, password)
+		self.loginUrl = 'http://login.sina.com.cn/sso/login.php?client=ssologin.js(v1.4.18)'
+
+	def login(self):
+		# Prelogin
+		data = {'entry': 'weibo', 'callback': 'sinaSSOController.preloginCallBack', 'rsakt': 'mod'}
+		serverUrl = 'http://login.sina.com.cn/sso/prelogin.php?' + urllib.urlencode(data)
+		serverData = urllib2.urlopen(serverUrl).read()
+		serverTime, nonce, pubkey, rsakv = WeiboSearch.getServerData(serverData)
+		self.loginParams = WeiboEncode.encodePost(self.username, self.password, serverTime, nonce, pubkey, rsakv)
+		# Login
+		request = urllib2.Request(self.loginUrl, urllib.urlencode(self.loginParams), headers = self.headers)
+		text = urllib2.urlopen(request).read()
+		try:
+			urllib2.urlopen(WeiboSearch.getRedirectData(text))
+			self.url = 'http://d.weibo.com/?from=signin'
+		except:
+			print('Login Weibo error!')
 
 
+# a = WeiboSpyder('dianchen96@gmail.com', 'chendian6996')
+# a.login()
+# html = urllib2.urlopen(a.url).read()
+# with open('G:/academics/spyder/1.html', 'wb') as file_:
+# 	file_.write(html)
 
 ####################################
 #######  Terminal Testing    #######
@@ -206,34 +232,15 @@ def renren_id(keyword):
 		print(tag['img'])
 		print('-'*50)
 
-def main():
+def renren_profile(keyword):
 	a = RenrenSpyder('dianchen96@berkeley.edu', 'cczx691')
 	a.login()
-	print "\nWelcome to Renren Archiver\n"
-	ownerid =raw_input("Enter the Renren profile ID: ")
-	path = raw_input("Enter the directory you want to archive: ")
-	start = raw_input("Enter the start year you want to archive: ")
-	end = raw_input("Enter the end year you want to archive: ")
-	try:
-		os.stat(path)
-	except:
-		os.mkdir(path)   
-	a.archive_person({'url': ownerid}, range(int(start), int(end)+1), range(1, 13))
-	print('Done ')
-
-main()
+	for tag in a.person_timeline({'url': keyword}, range(2013, 2014), range(1, 13)):
+		print(tag)
 
 ###################################
 ########## Tests  #################
 ###################################
-
-def renren_archive():
-	url = 'http://www.renren.com/361513136/profile?ref=searchresult_0&q=\u9648\u7EFF\u7B71|p=|s=0|u=470629775&act=name&rt=user&in=0&ft=2&hh=1'
-
-
-
-
-
 
 
 ###################################
