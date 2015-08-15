@@ -1,4 +1,3 @@
-
 import sys
 import urllib
 import urllib2
@@ -39,12 +38,16 @@ class EngineSpyder(Spyder):
 			while count < item:
 				request = urllib2.Request(url, headers = self.headers)
 				html = urllib2.urlopen(request).read()
-				soup = BeautifulSoup(html, 'html.parser')
+				with open('G:/academics/spyder/'+str(count)+'.html', 'wb') as file_:
+					print('Archiving '+ str(count))
+					file_.write(html)
+				soup = BeautifulSoup(html, 'lxml')
 				results = soup.find_all('div', class_ = self.tag)
 				if len(results) == 0:
 					return 
 				for tag in results:
 					count += 1
+					print(tag)
 					yield tag
 					if count >= item:
 						return;
@@ -109,7 +112,6 @@ class TiebaIDSpyder(TiebaSpyder):
 		for tag in self.search(urllib.quote(keyword.decode(sys.stdin.encoding).encode('gbk')), self.item):
 			yield {'title': tag.a.text, 'url': self.base + tag.a['href'], 'content': tag.div.text}
 
-
 class LoginSpyder(Spyder):
 	def __init__(self, username, password):
 		# URL Related 
@@ -159,6 +161,7 @@ class RenrenSpyder(LoginSpyder):
 					for tag in soup.find_all('section', class_ = 'tl-a-feed'):
 						yield 
 				except urllib2.URLError, e:
+					print('[Renren] Error retrieving data from '+ownerid+' '+str(year) + '-' + str(month))
 					pass
 
 	def archive_page(self, ownerid, html, date):
@@ -166,7 +169,7 @@ class RenrenSpyder(LoginSpyder):
 			print('Archiving '+ ownerid +', as of ' + date + '  ...')
 			file_.write(html)
 
-# Since Weibo changes encription ways, this maybe subject to change
+# Since Weibo changes encryption ways, this maybe subject to change
 class WeiboSpyder(LoginSpyder):
 	def __init__(self, username, password):
 		super(WeiboSpyder, self).__init__(username, password)
@@ -187,6 +190,22 @@ class WeiboSpyder(LoginSpyder):
 			self.url = 'http://d.weibo.com/?from=signin'
 		except:
 			print('Login Weibo error!')
+
+	def search_user(self, keyword, gender = None, region = None, age = None, item = 10):
+		keyword = urllib.quote(keyword.decode(sys.stdin.encoding).encode('utf-8'))
+		if region:
+			keyword = keyword + '&region=' + region
+		if gender:
+			keyword = keyword + '&gender=' + gender
+		if age:
+			keyword = keyword + 'age=' + age 
+		delegate = EngineSpyder(baseUrl = 'http://s.weibo.com/user/', tag = 'S_content', _nextUrl = '&page=')
+		delegate.nextUrl = lambda count: delegate._nextUrl + str(count / 20)
+		for tag in delegate.search(keyword, item):
+			print(tag)
+			yield {'img': tag.img['src'], 'name': tag.div.p.a.text, 'uid': tag.div.p.a['uid'], 'desr': tag.div.p.div.p.text}
+
+		
 
 ####################################
 #######  Terminal Testing    #######
@@ -231,11 +250,19 @@ def renren_profile(keyword):
 	for tag in a.person_timeline({'url': keyword}, range(2013, 2014), range(1, 13)):
 		print(tag)
 
+def weibo_user(keyword):
+	a = WeiboSpyder('dianchen96@gmail.com', 'chendian6996')
+	a.login()
+	for tag in a.search_user(keyword):
+		# print(tag['name'])
+		# print(tag['uid'])
+		# print(tag['desr'])
+		# print(tag['img'])
+		print('-'*50)
+
+# weibo_user('a')
+
 ###################################
 ########## Tests  #################
 ###################################
 
-
-###################################
-##########  Utilities   ###########
-###################################
