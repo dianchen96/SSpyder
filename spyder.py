@@ -215,7 +215,7 @@ class WeiboSpyder(LoginSpyder):
 		soup = BeautifulSoup(html, 'lxml')
 		feed = soup.find('div', class_ = 'WB_feed')
 		for tag in feed.findAll('div', class_ = 'WB_feed_type'):
-			print(tag)
+			text = tag.find('div', text)
 
 
 
