@@ -17,3 +17,10 @@ def getRedirectData(text):
 	p = re.compile('location\.replace\([\'"](.*?)[\'"]\)')  
 	loginUrl = p.search(text).group(1)  
 	return loginUrl  
+
+def getSearchedData(page_content, pid, expr, tag = 'pid'):
+	p = re.compile(expr, re.MULTILINE)
+	for script in p.findall(page_content):
+		view_json = json.loads(script)
+		if 'html' in view_json and view_json[tag] == pid:
+			return view_json['html']

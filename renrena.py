@@ -32,7 +32,7 @@ class EngineSpyder(Spyder):
 		self.tag = tag
 		self._nextUrl = _nextUrl
 
-	def search(self, keyword, item = 10, nextpage = True):
+	def search(self, keyword, item = 10, htmltag = 'div', nextpage = True):
 		count = 0
 		url = self.baseUrl + keyword
 		try:
@@ -40,7 +40,7 @@ class EngineSpyder(Spyder):
 				request = urllib2.Request(url, headers = self.headers)
 				html = urllib2.urlopen(request).read()
 				soup = BeautifulSoup(html, 'html.parser')
-				results = soup.find_all('div', class_ = self.tag)
+				results = soup.find_all(htmltag, class_ = self.tag)
 				if len(results) == 0:
 					return 
 				for tag in results:

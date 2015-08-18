@@ -38,9 +38,9 @@ class EngineSpyder(Spyder):
 			while count < item:
 				request = urllib2.Request(url, headers = self.headers)
 				html = urllib2.urlopen(request).read()
-				with open('G:/academics/spyder/'+str(count)+'.html', 'wb') as file_:
-					print('Archiving '+ str(count))
-					file_.write(html)
+				# with open('G:/academics/spyder/'+str(count)+'.html', 'wb') as file_:
+				# 	print('Archiving '+ str(count))
+				# 	file_.write(html)
 				soup = BeautifulSoup(html, 'lxml')
 				results = soup.find_all('div', class_ = self.tag)
 				if len(results) == 0:
@@ -161,7 +161,7 @@ class RenrenSpyder(LoginSpyder):
 					for tag in soup.find_all('section', class_ = 'tl-a-feed'):
 						yield 
 				except urllib2.URLError, e:
-					print('[Renren] Error retrieving data from '+ownerid+' '+str(year) + '-' + str(month))
+					print('[Renren] Error retrieving data from '+ ownerid +' '+str(year) + '-' + str(month))
 					pass
 
 	def archive_page(self, ownerid, html, date):
@@ -199,13 +199,26 @@ class WeiboSpyder(LoginSpyder):
 			keyword = keyword + '&gender=' + gender
 		if age:
 			keyword = keyword + 'age=' + age 
-		delegate = EngineSpyder(baseUrl = 'http://s.weibo.com/user/', tag = 'S_content', _nextUrl = '&page=')
-		delegate.nextUrl = lambda count: delegate._nextUrl + str(count / 20)
-		for tag in delegate.search(keyword, item):
-			print(tag)
-			yield {'img': tag.img['src'], 'name': tag.div.p.a.text, 'uid': tag.div.p.a['uid'], 'desr': tag.div.p.div.p.text}
+		html = WeiboSearch.getSearchedData(urllib2.urlopen('http://s.weibo.com/user/' + keyword).read(), 'pl_user_feedList', '<script>STK && STK.pageletM && STK.pageletM.view\((.*)\)</script>')
+		soup = BeautifulSoup(html, 'lxml')
+		for tag in soup.find_all('div', class_ = 'list_person'):
+			desr = tag.find('div', class_ = 'person_info').text.splitlines()[2].strip(' \t\n\r')
+			img = tag.img['src']
+			name = tag.p.a.text.strip()
+			uid = tag.p.a['uid']
+			tags = [[subsubtag.text.strip() for subsubtag in subtag.findAll('a')] for subtag in tag.findAll('p', class_ = 'person_label')]
+			yield {'img': img, 'name': name, 'uid': uid, 'desr': desr, 'tags': tags}
 
-		
+	def search_timeline(self, uid, item = 50):
+		# print(urllib2.urlopen('http://weibo.com/' + uid).read())
+		html = WeiboSearch.getSearchedData(urllib2.urlopen('http://weibo.com/' + uid).read(), 'Pl_Official_MyProfileFeed__22', '<script>FM.view\((.*)\)</script>', tag = 'domid')
+		soup = BeautifulSoup(html, 'lxml')
+		feed = soup.find('div', class_ = 'WB_feed')
+		for tag in feed.findAll('div', class_ = 'WB_feed_type'):
+			print(tag)
+
+
+
 
 ####################################
 #######  Terminal Testing    #######
@@ -254,14 +267,20 @@ def weibo_user(keyword):
 	a = WeiboSpyder('dianchen96@gmail.com', 'chendian6996')
 	a.login()
 	for tag in a.search_user(keyword):
-		# print(tag['name'])
-		# print(tag['uid'])
-		# print(tag['desr'])
-		# print(tag['img'])
+		print(tag['name'])
+		print(tag['uid'])
+		print(tag['desr'])
+		print(tag['img'])
+		for a in tag['tags']:
+			for b in a:
+				print(b)
 		print('-'*50)
-
+# weibo_user('a')
 # weibo_user('a')
 
+a = WeiboSpyder('dianchen96@gmail.com', 'chendian6996')
+a.login()
+a.search_timeline('2707995045')
 ###################################
 ########## Tests  #################
 ###################################
