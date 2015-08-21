@@ -18,9 +18,10 @@ def getRedirectData(text):
 	loginUrl = p.search(text).group(1)  
 	return loginUrl  
 
-def getSearchedData(page_content, pid, expr, tag = 'pid'):
+def getSearchedData(page_content, tag_expr, expr, tag = 'pid'):
 	p = re.compile(expr, re.MULTILINE)
+	tag_re = re.compile(tag_expr)
 	for script in p.findall(page_content):
 		view_json = json.loads(script)
-		if 'html' in view_json and view_json[tag] == pid:
+		if 'html' in view_json and tag_re.match(view_json[tag]):
 			return view_json['html']

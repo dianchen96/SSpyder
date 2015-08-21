@@ -210,18 +210,20 @@ class WeiboSpyder(LoginSpyder):
 			yield {'img': img, 'name': name, 'uid': uid, 'desr': desr, 'tags': tags}
 
 	def search_timeline(self, uid, item = 50):
-		# print(urllib2.urlopen('http://weibo.com/' + uid).read())
-		html = WeiboSearch.getSearchedData(urllib2.urlopen('http://weibo.com/' + uid).read(), 'Pl_Official_MyProfileFeed__22', '<script>FM.view\((.*)\)</script>', tag = 'domid')
-		soup = BeautifulSoup(html, 'lxml')
-		feed = soup.find('div', class_ = 'WB_feed')
-		for tag in feed.findAll('div', class_ = 'WB_feed_type'):
-			text = tag.find('div', text)
-
+		for tag in EngineSpyder(baseUrl = 'http://weibo.cn/u/', tag = 'c').search(uid, item, nextpage = True):
+			# Content of Weibo 
+			content = tag.find('span', class_ = 'ctt').text
+			# Repost of Weibo
+			repost = tag.find('span', class_ = 'cmt')
+			text = repost.text if repost else None
+			info = tag.find('span', class_ = 'ct')
+			date = tag.find(' span', )
+			yield {'content': content, 'repost': repost, 'device', device}
 
 
 
 ####################################
-#######  Terminal Testing    #######
+#######   Terminal Testing    ######
 ####################################
 
 def google(keyword):
@@ -275,12 +277,16 @@ def weibo_user(keyword):
 			for b in a:
 				print(b)
 		print('-'*50)
-# weibo_user('a')
-# weibo_user('a')
 
 a = WeiboSpyder('dianchen96@gmail.com', 'chendian6996')
 a.login()
-a.search_timeline('2707995045')
+for tag in a.search_timeline('4aadcom'):
+	print(tag['content'])
+	print(tag['repost'])
+	print(tag['date'])
+	print(tag['device'])
+	print('-'*50)
+
 ###################################
 ########## Tests  #################
 ###################################
