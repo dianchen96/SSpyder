@@ -16,7 +16,8 @@ import WeiboSearch
 
 class Spyder(object):
 
-	user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.125 Safari/537.36'  
+	user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.130 Safari/537.36' 
+	# user_agent = 'Magic Browser' 
 	headers = {'User-Agent': user_agent}
 
 
@@ -36,11 +37,9 @@ class EngineSpyder(Spyder):
 		url = self.baseUrl + keyword
 		try:
 			while count < item:
+				print(url)
 				request = urllib2.Request(url, headers = self.headers)
 				html = urllib2.urlopen(request).read()
-				# with open('G:/academics/spyder/'+str(count)+'.html', 'wb') as file_:
-				# 	print('Archiving '+ str(count))
-				# 	file_.write(html)
 				soup = BeautifulSoup(html, 'lxml')
 				results = soup.find_all('div', class_ = self.tag)
 				if len(results) == 0:
@@ -173,23 +172,26 @@ class RenrenSpyder(LoginSpyder):
 class WeiboSpyder(LoginSpyder):
 	def __init__(self, username, password):
 		super(WeiboSpyder, self).__init__(username, password)
-		self.loginUrl = 'http://login.sina.com.cn/sso/login.php?client=ssologin.js(v1.4.18)'
-
-	def login(self):
+		## Below is for logging into web Weibo
+		# self.loginUrl = 'http://login.sina.com.cn/sso/login.php?client=ssologin.js(v1.4.18)'
+		self.loginUrl = 'http://login.weibo.cn'
 		# Prelogin
-		data = {'entry': 'weibo', 'callback': 'sinaSSOController.preloginCallBack', 'rsakt': 'mod'}
-		serverUrl = 'http://login.sina.com.cn/sso/prelogin.php?' + urllib.urlencode(data)
-		serverData = urllib2.urlopen(serverUrl).read()
-		serverTime, nonce, pubkey, rsakv = WeiboSearch.getServerData(serverData)
-		self.loginParams = WeiboEncode.encodePost(self.username, self.password, serverTime, nonce, pubkey, rsakv)
-		# Login
-		request = urllib2.Request(self.loginUrl, urllib.urlencode(self.loginParams), headers = self.headers)
-		text = urllib2.urlopen(request).read()
-		try:
-			urllib2.urlopen(WeiboSearch.getRedirectData(text))
-			self.url = 'http://d.weibo.com/?from=signin'
-		except:
-			print('Login Weibo error!')
+		login_html = urllib2.urlopen(urllib2.Request('http://login.weibo.cn', headers = self.headers)).read()
+		print(login_html)
+		login_soup = BeautifulSoup(login_html)
+		# password_key = login_soup.find('input', type_ = 'password')
+		print(password_key)
+		vk = login_soup.find('input', attr = {'name': 'vk'})['value']
+		self.loginParams = {'mobile': self.username, 
+												password_key: self.password, 
+												'remember': 'on',
+												'vk': vk,
+												'backURL': 'http%3A%2F%2Fweibo.cn',
+												'backTitle': '%E6%89%8B%E6%9C%BA%E6%96%B0%E6%B5%AA%E7%BD%91',
+												'submit': '%E7%99%BB%E5%BD%95'
+												}
+		
+
 
 	def search_user(self, keyword, gender = None, region = None, age = None, item = 10):
 		keyword = urllib.quote(keyword.decode(sys.stdin.encoding).encode('utf-8'))
@@ -218,7 +220,7 @@ class WeiboSpyder(LoginSpyder):
 			text = repost.text if repost else None
 			info = tag.find('span', class_ = 'ct')
 			date = tag.find(' span', )
-			yield {'content': content, 'repost': repost, 'device', device}
+			yield {'content': content, 'repost': repost, 'device': device}
 
 
 
@@ -280,6 +282,10 @@ def weibo_user(keyword):
 
 a = WeiboSpyder('dianchen96@gmail.com', 'chendian6996')
 a.login()
+
+# url = 'http://weibo.cn'
+# b = urllib2.Request(url, headers = Spyder.headers)
+# print(urllib2.urlopen(b).read())
 for tag in a.search_timeline('4aadcom'):
 	print(tag['content'])
 	print(tag['repost'])
